@@ -4,18 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Spanish Practice</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="../assets/app.css">
-<style>body{margin:0}[hidden]{display:none!important}</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Noto+Naskh+Arabic:wght@400;600&display=swap">
+<link rel="stylesheet" href="../assets/app.css?v=11140923">
+<style>body{margin:0}[hidden]{display:none!important}.cue .ar,.cue .es{color:#fff}.cue .tr{color:#F9E6DE}.sumrow{display:flex;flex-wrap:wrap;gap:8px 22px;font-size:14px;color:var(--muted);margin-top:14px}.sumrow b{color:var(--fg)}.linkbtn{background:none;border:0;padding:0;font:inherit;font-size:13px;color:var(--muted);text-decoration:underline;cursor:pointer}</style>
 </head>
 <body>
 <div class="app">
 <nav aria-label="Main">
   <div class="brand"><b>Español</b></div>
-  <a href="#home" data-v="home">Unit</a>
+  <a href="#home" data-v="home">Units</a>
   <a href="#conv" data-v="conv">Conversation</a>
   <a href="#ex" data-v="ex">Exercises</a>
-  <a href="#quiz" data-v="quiz">Quiz</a>
+  <a href="#quiz" data-v="quiz" hidden>Quiz</a>
   <a href="#progress" data-v="progress">Progress</a>
   <a href="../">← Languages</a>
   <p class="navnote">Audio is the DLI Spanish Headstart for Latin America tape, a U.S. government course. Your recordings and progress stay in this browser.</p>
@@ -23,36 +23,27 @@
 <main>
 
 <section class="view" id="v-home">
-  <div class="crumb">Spanish Headstart for Latin America · Module 1 · Getting to know you</div>
-  <h1>Unit 1 · Greetings and introductions</h1>
-  <p class="sub">Saludos y presentación</p>
-  <div class="grid g2" style="margin-top:20px">
-    <div class="card"><h2>Work through it in this order</h2>
-      <ol class="note" style="margin:0 0 0 18px;padding:0;line-height:1.8;font-size:14px">
-        <li><a href="#conv">Conversation</a>: listen, then shadow each line.</li>
-        <li><a href="#ex">Exercises 1–13</a>: repeat, respond to cues, and say sentences in Spanish.</li>
-        <li><a href="#drill" id="mixedLink">Mixed practice</a>: every cue from the unit, weakest first, out of order.</li>
-        <li><a href="#quiz">Self-evaluation quiz</a>: nine situations with no hints.</li>
-      </ol>
-      <div class="note" id="homeStats" style="margin-top:12px"></div></div>
-    <div class="card"><h2>By the end of this unit you can</h2>
-      <ul class="note" style="margin:0 0 0 18px;padding:0;line-height:1.8;font-size:14px"><li>Greet people by time of day</li><li>Ask and answer "How are you?"</li><li>Introduce yourself and others</li><li>Respond to an introduction</li></ul>
-      <p class="note" style="margin-top:10px">This course was written for U.S. service members in Panama, so the examples use military ranks. The greetings and introductions are everyday Spanish.</p></div>
-  </div>
+  <div class="crumb">DLI Spanish Headstart for Latin America · Module 1</div>
+  <h1>Units</h1>
+  <p class="sub">Pick one to work on. <span id="homeStats"></span></p>
+  <div class="exlist" id="unitList" style="margin-top:18px;max-width:760px"></div>
+  <div class="card" style="margin-top:18px;max-width:760px;box-sizing:border-box"><h2>How to work through one</h2>
+    <ol class="note" style="margin:0 0 0 18px;padding:0;line-height:1.8;font-size:14px"><li>Conversation: listen, then say each line.</li><li>Exercises, in the book's order: record your answer before you look.</li><li><a href="#drill" class="mixed">Mixed practice</a>: 20 cues from this one and earlier ones, weakest first.</li></ol>
+    <p class="note" style="margin:10px 0 0">Every attempt is logged: your rating, how long you took to start, what went wrong, and what the recognizer heard. Export it from Progress.</p></div>
 </section>
 
 <section class="view" id="v-conv" hidden>
-  <div class="crumb">Unit 1</div><h1>Conversation</h1>
-  <p class="sub">Listen to the whole thing first, then play a line, say it, and compare.</p>
-  <div class="row" style="margin:14px 0 18px"><button class="btn primary" id="playConv">▶ Whole conversation</button><label class="note" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="hideText"> Hide the Spanish text</label></div>
+  <div class="crumb unitname"></div><h1>Conversation</h1>
+  <p class="sub">Listen first, then play a line, say it, and compare.</p>
+  <div class="row" style="margin:14px 0 18px"><button class="btn" id="playConvSlow">▶ All, slow</button><button class="btn primary" id="playConv">▶ All, at speed</button><label class="note" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="hideText"> Hide the text</label></div>
   <div class="card" id="convLines"></div>
-  <div class="card" style="margin-top:18px"><h2>Notes on the conversation</h2><div id="convNotes"></div></div>
+  <div class="card" style="margin-top:18px"><h2>Notes</h2><div id="convNotes"></div></div>
 </section>
 
 <section class="view" id="v-ex" hidden>
-  <div class="crumb">Unit 1</div><h1>Exercises</h1>
+  <div class="crumb unitname"></div><h1>Exercises</h1>
   <p class="sub">In the book's order. Each one shows your last result.</p>
-  <div class="row" style="margin:14px 0 18px"><a class="btn primary" href="#drill" id="mixedBtn">Mixed practice, weakest first</a></div>
+  <div class="row" style="margin:14px 0 18px"><a class="btn primary mixed" href="#drill">Mixed practice, weakest first</a></div>
   <div class="exlist" id="exList"></div>
 </section>
 
@@ -63,28 +54,31 @@
   <div id="micBanner" class="banner" hidden style="margin-bottom:16px"></div>
   <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">
     <div class="grid" style="align-content:start">
-      <div class="card" id="instrCard"><div class="eyebrow">What to do</div><p id="dInstr" style="margin:6px 0 0"></p><p class="note" id="dModel" style="margin:8px 0 0"></p></div>
-      <div class="cue"><div class="eyebrow" id="cueLabel">Cue</div><div class="big" id="cueText" style="font-size:32px"></div><div style="margin-top:8px"><button class="btn" id="playCue" hidden>▶ Hear the cue</button></div></div>
+      <div class="card"><div class="eyebrow">What to do</div><p id="dInstr" style="margin:6px 0 0"></p><p class="note" id="dModel" style="margin:8px 0 0"></p></div>
+      <div class="card" id="fromCard" hidden><div class="row" style="justify-content:space-between"><span class="eyebrow">Start from</span><button class="btn" id="playFrom" style="min-height:36px">▶ Tape</button></div><div id="fromBody" style="margin-top:4px"></div></div>
+      <div class="cue"><div class="eyebrow" id="cueLabel">Cue</div><div class="big" id="cueText"></div><div style="margin-top:8px"><button class="btn" id="playCue" hidden></button></div></div>
       <div class="card"><div class="row" style="justify-content:space-between"><span class="eyebrow">Answer</span><button class="btn" id="reveal" style="min-height:36px">Show answer</button></div>
-        <div id="ansBody" hidden><div class="es" id="ansText" lang="es"></div><div class="en" id="ansEn"></div><div class="note" id="ansAlt"></div>
-          <div class="row" style="margin-top:10px"><button class="btn" id="playAns">▶ Tape</button><button class="btn you" id="playMine" disabled>▶ You</button></div></div></div>
+        <div id="ansBody" hidden><div id="ansText"></div><div class="en" id="ansEn"></div><div class="note" id="ansAlt"></div><div class="note" id="ansBy" hidden>The book does not print this answer. It is worked out from the cue, so trust the tape over the text if they differ.</div>
+          <div class="row" style="margin-top:10px"><button class="btn" id="playAns"></button><button class="btn you" id="playMine" disabled>▶ You</button><button class="linkbtn" id="flag">Wrong audio?</button></div></div></div>
       <div class="card" id="noteCard" hidden><div class="eyebrow">Note</div><p class="note" id="dNote" style="margin:6px 0 0;font-size:14px"></p></div>
     </div>
     <div class="card grid" style="align-content:start;gap:14px">
       <div class="row"><button class="rec" id="recBtn" aria-label="Record your answer"><svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
-        <div><h2 style="margin:0">Your turn</h2><div class="note" id="recHint">Tap once to turn the microphone on.</div></div></div>
+        <div><h2 style="margin:0">Your turn</h2><div class="note" id="recHint"></div></div></div>
       <div><p class="lbl">Tape</p><canvas class="wave" id="waveTape" width="600" height="56"></canvas></div>
       <div><p class="lbl">You</p><canvas class="wave" id="waveMine" width="600" height="56"></canvas></div>
       <div class="row" style="justify-content:space-between;font-variant-numeric:tabular-nums"><span class="note" id="durTape">Tape: —</span><span class="note" id="durMine">You: —</span></div>
-      <div class="heard"><div class="row" style="justify-content:space-between"><span class="lbl" style="margin:0">Recognizer heard</span><span class="tag mute" id="heardTag">waiting</span></div><div class="es sm" id="heardText" lang="es" style="min-height:1.4em">—</div><div class="note" id="heardNote">Browser speech recognition, set to Latin American Spanish. It checks your words, not your accent.</div><label class="note" style="display:flex;gap:8px;align-items:center;margin-top:8px"><input type="checkbox" id="srToggle"> Use the recognizer</label></div>
-      <div><p class="lbl">How did it go?</p><div class="rate"><button class="r1" data-r="1">Needs work</button><button class="r2" data-r="2">Good</button><button class="r3" data-r="3">Nailed it</button></div></div>
+      <div class="heard"><div class="row" style="justify-content:space-between"><span class="lbl" style="margin:0">Recognizer heard</span><span class="tag mute" id="heardTag">waiting</span></div><div id="heardText" lang="es" style="min-height:1.5em;font-size:19px">—</div><div class="note" id="heardNote"></div><label class="note" style="display:flex;gap:8px;align-items:center;margin-top:8px"><input type="checkbox" id="srToggle"> Use the recognizer</label></div>
+      <div id="rateRow"><p class="lbl">How did it go?</p><div class="rate"><button class="r1" data-r="1">Needs work</button><button class="r2" data-r="2">Good</button><button class="r3" data-r="3">Nailed it</button></div></div>
+      <div id="whyRow" hidden><p class="lbl">What went wrong?</p><div class="row" style="gap:8px">
+        <button class="btn" data-why="wrong form" style="min-height:40px">Wrong ending or form</button><button class="btn" data-why="wrong word" style="min-height:40px">Wrong word</button><button class="btn" data-why="pronunciation" style="min-height:40px">Pronunciation</button><button class="btn" data-why="too slow" style="min-height:40px">Too slow</button><button class="btn" data-why="blanked" style="min-height:40px">Blanked</button><button class="linkbtn" data-why="">Skip</button></div></div>
       <div class="row" style="justify-content:space-between"><button class="btn" id="prev">← Back</button><button class="btn primary" id="next">Skip →</button></div>
     </div>
   </div>
 </section>
 
 <section class="view" id="v-listen" hidden>
-  <div class="crumb">Unit 1 · Exercise 13</div><h1>Listening: an informal conversation</h1>
+  <div class="crumb unitname"></div><h1 id="lTitle">Listening</h1>
   <p class="sub" id="lInstr"></p>
   <div class="row" style="margin:14px 0 18px"><button class="btn primary" id="playListen">▶ Play</button><button class="btn" id="showListen">Show the text</button></div>
   <div class="card" id="listenLines" hidden></div>
@@ -92,21 +86,23 @@
 </section>
 
 <section class="view" id="v-quiz" hidden>
-  <div class="crumb">Unit 1</div><h1>Self-evaluation quiz</h1>
-  <p class="sub">Say your answer out loud before you reveal it. The tape for the quiz is not loaded, so "Hear it" uses your browser's computer voice.</p>
+  <div class="crumb unitname"></div><h1>Self-evaluation quiz</h1>
+  <p class="sub">Say your answer out loud before you reveal it.</p>
   <div class="card" id="quizList" style="margin-top:18px"></div>
 </section>
 
 <section class="view" id="v-progress" hidden>
   <h1>Progress</h1><p class="sub">Every attempt, grouped by the pattern it practises.</p>
+  <div class="sumrow" id="summary"></div>
   <div class="grid g2" style="margin-top:18px">
-    <div class="card"><h2>By pattern</h2><table id="patTable"><thead><tr><th>Pattern</th><th>Attempts</th><th>Last 5</th><th></th></tr></thead><tbody></tbody></table><div class="ghost" id="patEmpty">No attempts yet. Do an exercise and come back.</div></div>
+    <div class="card"><h2>By pattern, weakest first</h2><div style="overflow-x:auto"><table id="patTable"><thead><tr><th>Pattern</th><th>Tries</th><th>Last 5</th><th>Start</th><th></th></tr></thead><tbody></tbody></table></div><div class="ghost" id="patEmpty">No attempts yet. Do an exercise and come back.</div></div>
     <div class="card"><h2>Recent attempts</h2><div id="recent"></div>
-      <div class="row" style="margin-top:14px"><button class="btn" id="exportLog">Copy log as JSON</button><button class="btn" id="clearLog">Clear log</button><span class="note" id="logToast"></span></div></div>
+      <div class="row" style="margin-top:14px"><button class="btn primary" id="exportLog">Copy log as JSON</button><button class="btn" id="downloadLog">Download</button><button class="btn" id="clearLog">Clear log</button></div><div class="note" id="logToast" style="margin-top:8px"></div></div>
   </div>
 </section>
 </main></div>
-<script src="data/m1u1.js"></script>
-<script src="app.js"></script>
+<script>window.LANG = {"code": "es", "name": "Spanish", "rtl": false, "sr": "es-MX", "tts": "es-MX", "logKey": "es.log", "audioBase": "audio/", "unitLabel": "Unit", "convLabel": "Conversation", "srNote": "Browser speech recognition, set to Latin American Spanish. It checks your words, not your accent."}; window.UNITS = {};</script>
+<script src="data/m1u1.js?v=11140923"></script>
+<script src="../assets/engine.js?v=11140923"></script>
 </body>
 </html>
