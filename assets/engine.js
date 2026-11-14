@@ -49,18 +49,18 @@ const allItems = u => u.exercises.flatMap(e => itemsOf(e, u));
 function lastRating(key) { for (let i = LOG.length - 1; i >= 0; i--) if (keyOf(LOG[i]) === key && LOG[i].rating) return LOG[i].rating; return 0; }
 
 // ---------- routing ----------
-const views = ['home', 'conv', 'ex', 'drill', 'listen', 'quiz', 'progress'];
+const views = ['home', 'conv', 'ex', 'drill', 'listen', 'quiz', 'test', 'progress'];
 function route() {
   let h = (location.hash || '#home').slice(1); if (!views.includes(h)) h = 'home';
   views.forEach(v => { const el = $('#v-' + v); if (el) el.hidden = v !== h; });
   const navv = (h === 'drill' || h === 'listen') ? 'ex' : h;
   document.querySelectorAll('nav a[data-v]').forEach(a => { a.dataset.v === navv ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current'); });
-  ({ home: renderHome, conv: renderConv, ex: renderExList, progress: renderProgress, quiz: renderQuiz, listen: renderListen }[h] || (() => {}))();
+  ({ home: renderHome, conv: renderConv, ex: renderExList, progress: renderProgress, quiz: renderQuiz, listen: renderListen, test: startTest }[h] || (() => {}))();
   if (h === 'drill' && !queue.length) startMixed();
   window.scrollTo(0, 0);
 }
 addEventListener('hashchange', route);
-function setUnit(id) { U = UNITS[id] || U; store.set(L.logKey + '.unit', U.id); queue = []; chrome(); }
+function setUnit(id) { U = UNITS[id] || U; store.set(L.logKey + '.unit', U.id); queue = []; T = null; chrome(); }
 function chrome() {
   document.querySelectorAll('.unitname').forEach(x => { x.textContent = `${L.unitLabel} ${U.n} · ${U.title}`; });
   const q = document.querySelector('nav a[data-v="quiz"]'); if (q) q.hidden = !U.quiz;
@@ -108,10 +108,11 @@ function renderExList() {
 }
 
 // ---------- drill ----------
-let queue = [], pos = 0, mode = '', mineUrl = null, mineBuf = null, mineBlob = null, heard = '', conf = null, shownAt = 0, takes = 0, revealedFirst = false, latency = null, pendingRating = null;
+let queue = [], pos = 0, mode = '', mineUrl = null, mineBuf = null, mineBlob = null, heard = '', conf = null, shownAt = 0, takes = 0, revealedFirst = false, latency = null, pendingRating = null, peeked = false;
+let studyMode = store.get(L.logKey + '.mode', 'auto');
 function startExercise(e) { queue = itemsOf(e); pos = 0; mode = e.title; show(); }
 function startMixed() {
-  queue = ORDER.filter(u => u.n <= U.n).flatMap(u => u.exercises.filter(e => e.type === 'cue' || e.type === 'translate').flatMap(e => itemsOf(e, u)));
+  queue = ORDER.filter(u => u.n <= U.n).flatMap(u => u.exercises.flatMap(e => itemsOf(e, u)).filter(x => x.ex.type === 'cue' || x.ex.type === 'translate' || (x.ex.type === 'repetition' && x.it.en && lastRating(x.key) >= 2)));
   queue.forEach(q => { q.r = Math.random() + (q.u.id === U.id ? 0 : 0.35); });
   queue.sort((a, b) => (lastRating(a.key) || 0.5) - (lastRating(b.key) || 0.5) || a.r - b.r);
   queue = queue.slice(0, 20).sort(() => Math.random() - 0.5); pos = 0; mode = 'Mixed practice'; show();
@@ -121,23 +122,32 @@ const cur = () => queue[pos];
 const setTag = (t, c) => { $('#heardTag').textContent = t; $('#heardTag').className = 'tag ' + c; };
 async function show() {
   const q = cur(); if (!q) return; const e = q.ex, it = q.it;
+  const seen = lastRating(q.key) >= 2;
+  const recall = e.type === 'repetition' ? (!!it.en && (studyMode === 'hide' || (studyMode === 'auto' && (seen || mode === 'Mixed practice')))) : studyMode !== 'show';
+  const repRecall = recall && e.type === 'repetition';
+  q.recall = recall; peeked = false; $('#studyMode').value = studyMode;
   $('#dCrumb').textContent = `${L.unitLabel} ${q.u.n} · ${mode}` + (mode === e.title ? '' : ' · from ' + e.title);
-  $('#dTitle').textContent = KIND[e.type]; $('#dPos').textContent = `${pos + 1} of ${queue.length}`;
+  $('#dTitle').textContent = repRecall ? 'Say it from memory' : KIND[e.type]; $('#dPos').textContent = `${pos + 1} of ${queue.length}`;
   $('#pills').innerHTML = queue.map((_, i) => `<i class="${i < pos ? 'done' : i === pos ? 'now' : ''}"></i>`).join('');
-  $('#dInstr').textContent = e.type === 'repetition' ? 'Play the tape, then say it yourself and compare.' : e.instruction;
+  $('#dInstr').textContent = repRecall ? 'Say it in ' + L.name + ' from memory. The text and the tape come after your attempt.' : e.type === 'repetition' ? 'First time through: play the tape, say it, and compare. Next time the text will be hidden.' : e.instruction + (recall ? ' Try it before you look at anything.' : '');
   $('#dModel').innerHTML = e.model ? `Example: you hear <b>${esc(e.model.cue)}</b>, you say <b>${esc(e.model.answer)}</b>` : '';
   // start-from sentence (substitution drills)
   $('#fromCard').hidden = !it.from;
-  if (it.from) { $('#fromBody').innerHTML = tgt(it.from.text, it.from.tr); const fk = q.fromKey; $('#playFrom').hidden = !aud(fk, q.u); $('#playFrom').onclick = () => play(fk, q.u); }
-  $('#cueLabel').textContent = e.type === 'repetition' ? 'Repeat' : e.type === 'translate' ? 'Say in ' + L.name : it.from ? 'Cue: change it to' : 'Cue';
-  const targetCue = e.type === 'repetition' || it.cue_tr;
-  $('#cueText').innerHTML = e.type === 'repetition' ? tgt(it.text, it.tr) + (it.en ? `<div style="font-size:15px;font-weight:400;opacity:.9;margin-top:4px">${esc(it.en)}</div>` : '') : e.type === 'translate' ? esc(it.en) : it.cue_tr ? tgt(it.cue, it.cue_tr) : esc(it.cue);
-  $('#cueText').style.fontSize = targetCue ? '' : '30px';
+  if (it.from) { const fk = q.fromKey, full = tgt(it.from.text, it.from.tr), hideFrom = recall && !!aud(fk, q.u);
+    $('#fromBody').innerHTML = hideFrom ? '<span class="note">Play it on the tape. </span><button class="linkbtn" id="peekFrom">Show the text</button>' : full;
+    if (hideFrom) $('#peekFrom').onclick = () => { peeked = true; $('#fromBody').innerHTML = full; };
+    $('#playFrom').hidden = !aud(fk, q.u); $('#playFrom').onclick = () => play(fk, q.u); }
+  $('#cueLabel').textContent = repRecall || e.type === 'translate' ? 'Say in ' + L.name : e.type === 'repetition' ? 'Repeat' : it.from ? 'Cue: change it to' : 'Cue';
   const cueKey = e.type === 'repetition' ? q.id : q.id + '_cue';
-  $('#playCue').hidden = !aud(cueKey, q.u); $('#playCue').innerHTML = PLAY + (e.type === 'repetition' ? ' Tape' : ' Hear the cue'); $('#playCue').onclick = () => play(cueKey, q.u);
+  const hideCue = recall && !!it.cue_tr && !!aud(cueKey, q.u);
+  const cueFull = e.type === 'repetition' ? tgt(it.text, it.tr) + (it.en ? `<div style="font-size:15px;font-weight:400;opacity:.9;margin-top:4px">${esc(it.en)}</div>` : '') : e.type === 'translate' ? esc(it.en) : it.cue_tr ? tgt(it.cue, it.cue_tr) : esc(it.cue) + (it.en ? `<div style="font-size:15px;font-weight:400;opacity:.9;margin-top:4px">${esc(it.en)}</div>` : '');
+  $('#cueText').innerHTML = repRecall ? esc(it.en) : hideCue ? '<span style="font-size:18px;font-weight:400">Listen to the cue. </span><button class="linkbtn" id="peekCue" style="color:#fff">Show the text</button>' : cueFull;
+  if (hideCue) $('#peekCue').onclick = () => { peeked = true; $('#cueText').innerHTML = cueFull; $('#cueText').style.fontSize = ''; };
+  $('#cueText').style.fontSize = ((e.type === 'repetition' || it.cue_tr) && !repRecall && !hideCue) ? '' : '30px';
+  $('#playCue').hidden = !aud(cueKey, q.u) || repRecall; $('#playCue').innerHTML = PLAY + (e.type === 'repetition' ? ' Tape' : ' Hear the cue'); $('#playCue').onclick = () => play(cueKey, q.u);
   $('#ansText').innerHTML = tgt(q.answer, q.tr, 'mid'); $('#ansEn').textContent = e.type === 'translate' ? '' : (it.en || ''); $('#ansAlt').textContent = it.alt ? 'Also correct: ' + it.alt : '';
   $('#ansBy').hidden = !e.answers_by;
-  const hide = e.type !== 'repetition'; $('#ansBody').hidden = hide; $('#reveal').hidden = !hide;
+  const hide = e.type !== 'repetition' || repRecall; $('#ansBody').hidden = hide; $('#reveal').hidden = !hide;
   const has = !!aud(q.id, q.u);
   $('#playAns').hidden = !has && !L.tts; $('#playAns').innerHTML = PLAY + (has ? ' Tape' : ' Computer voice (not on the tape)');
   $('#flag').hidden = !has; paintFlag();
@@ -151,6 +161,7 @@ async function show() {
   drawWave($('#waveTape'), null); shownAt = Date.now();
   const key = q.key; const buf = await tapeBuffer(q.id, q.u); if (cur() && cur().key === key) drawWave($('#waveTape'), buf, cssv('--accent'));
 }
+$('#studyMode').onchange = ev => { studyMode = ev.target.value; store.set(L.logKey + '.mode', studyMode); if (cur()) show(); };
 function playAnswer() { const q = cur(); aud(q.id, q.u) ? play(q.id, q.u) : speak(q.answer); }
 function revealAnswer(playIt) { if ($('#ansBody').hidden && !takes) revealedFirst = true; $('#ansBody').hidden = false; $('#reveal').hidden = true; if (playIt) playAnswer(); }
 $('#reveal').onclick = () => revealAnswer(true);
@@ -164,7 +175,7 @@ function logAttempt(rating, why) {
   const q = cur(), m = aud(q.id, q.u);
   LOG.push({ t: Date.now(), session: SESSION, lang: L.code, unit: q.u.id, id: q.id, ex: q.ex.id, pattern: q.ex.pattern, type: q.ex.type, cue: q.it.cue || q.it.en || null, target: q.answer, rating, why: why || null,
     recorded: !!mineBlob, takes, revealedFirst, latencyMs: latency, mineSec: mineBuf ? +mineBuf.duration.toFixed(2) : null, tapeSec: m ? m.dur : null,
-    heard: heard || null, conf: conf, match: heard ? +match(heard, q.answer, q.it.alt).toFixed(2) : null, mixed: mode === 'Mixed practice', flagged: !!FLAGS[q.key] });
+    mode: q.recall ? 'recall' : 'shown', peeked, heard: heard || null, conf: conf, match: heard ? +match(heard, q.answer, q.it.alt).toFixed(2) : null, mixed: mode === 'Mixed practice', flagged: !!FLAGS[q.key] });
   saveLog(); advance();
 }
 document.querySelectorAll('#rateRow button').forEach(b => b.onclick = () => { const r = +b.dataset.r; if (r === 1) { pendingRating = 1; $('#rateRow').hidden = true; $('#whyRow').hidden = false; } else logAttempt(r); });
@@ -227,14 +238,74 @@ function renderQuiz() {
   document.querySelectorAll('[data-say]').forEach(b => b.onclick = () => speak(b.dataset.say));
 }
 
+
+// ---------- graded test ----------
+let T = null;
+function testPool(u) {
+  const out = [], seenK = new Set();
+  const add = (id, text, tr, en, akey) => { if (!en || !text) return; const ans = tr || text, k = ans + '|' + en; if (seenK.has(k)) return; seenK.add(k); out.push({ u, id: 'q:' + id, key: u.id + '|q:' + id, text, tr, en, ans, akey: aud(akey, u) ? akey : null }); };
+  u.conversation.forEach(c => (c.build_up || []).forEach((b, k) => add(c.id + '_b' + k, b.text, b.tr, b.en, c.id + '_b' + k)));
+  u.exercises.filter(e => e.type === 'repetition').forEach(e => e.items.forEach((it, k) => add(e.id + '_' + k, it.text, it.tr, it.en, e.id + '_' + k)));
+  return out;
+}
+const tstrip = s => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9ñÑ]/g, '');
+function gradeTyped(typed, ans) {
+  const a = tstrip(typed), b = tstrip(ans); if (!a) return 'wrong';
+  if (a === b) return 'correct'; if (a.toLowerCase() === b.toLowerCase()) return L.rtl ? 'caps' : 'correct';
+  const d = lev(a.toLowerCase(), b.toLowerCase()); return (b.length >= 4 && d <= 1) || (b.length >= 10 && d <= 2) ? 'close' : 'wrong';
+}
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+function startTest(force) {
+  if (T && !force && T.unit === U.id) return;
+  const pool = testPool(U), wider = ORDER.filter(u => u.n <= U.n).flatMap(testPool);
+  pool.forEach(p => { p.r = Math.random(); });
+  const qs = pool.sort((a, b) => (lastRating(a.key) || 0.5) - (lastRating(b.key) || 0.5) || a.r - b.r).slice(0, 12);
+  shuffle(qs).forEach((q, i) => {
+    const kinds = ['type', q.akey ? 'hear' : 'read', 'read']; q.kind = kinds[i % 3];
+    if (q.kind !== 'type') { const ds = []; shuffle(wider.filter(x => x.ans !== q.ans && x.en !== q.en && norm(x.text) !== norm(q.text))).forEach(x => { if (ds.length < 3 && !ds.some(d => d.en === x.en)) ds.push(x); }); q.choices = shuffle([q, ...ds]); if (ds.length < 2) q.kind = 'type'; }
+  });
+  T = { unit: U.id, qs, i: 0, right: 0, misses: [] }; showTest();
+}
+const TKIND = { type: 'Type it', hear: 'Listen and choose the meaning', read: 'Read and choose the meaning' };
+function showTest() {
+  const done = T.i >= T.qs.length; $('#tCard').hidden = done; $('#tDone').hidden = !done;
+  $('#tPills').innerHTML = T.qs.map((q, i) => `<i class="${i < T.i ? (q.ok ? 'done' : 'now') : ''}"></i>`).join('');
+  if (done) {
+    $('#tScore').textContent = T.qs.length ? `${T.right} of ${T.qs.length} correct` : 'Nothing to test in this one yet.';
+    $('#tMisses').innerHTML = T.misses.map(q => `<div class="line"><div>${tgt(q.text, q.tr, 'sm')}<div class="en">${esc(q.en)}</div></div>${q.akey ? `<button class="btn round" data-tplay="${q.akey}" aria-label="Play">${PLAY}</button>` : ''}</div>`).join('') || '<div class="ghost">No misses.</div>';
+    document.querySelectorAll('[data-tplay]').forEach(b => b.onclick = () => play(b.dataset.tplay)); return;
+  }
+  const q = T.qs[T.i]; T.t0 = Date.now();
+  $('#tKind').textContent = `${T.i + 1} of ${T.qs.length} · ${TKIND[q.kind]}`; $('#tFeedback').innerHTML = ''; $('#tNext').hidden = true;
+  $('#tChoices').hidden = q.kind === 'type'; $('#tForm').hidden = q.kind !== 'type';
+  if (q.kind === 'type') { $('#tPrompt').innerHTML = `<div style="font-size:26px;font-weight:500">${esc(q.en)}</div><div class="note" style="margin-top:6px">${esc(L.typeHint || '')}</div>`; $('#tInput').value = ''; $('#tInput').disabled = false; $('#tCheck').disabled = false; setTimeout(() => $('#tInput').focus(), 50); }
+  else {
+    $('#tPrompt').innerHTML = q.kind === 'hear' ? `<button class="btn primary" id="tPlay">${PLAY} Play</button>` : `<div class="${tcls('big')}" lang="${L.code}">${esc(q.text)}</div>`;
+    if (q.kind === 'hear') { $('#tPlay').onclick = () => play(q.akey); play(q.akey); }
+    $('#tChoices').innerHTML = q.choices.map((c, k) => `<button class="choice" data-k="${k}">${esc(c.en)}</button>`).join('');
+    document.querySelectorAll('#tChoices .choice').forEach(b => b.onclick = () => { const c = q.choices[+b.dataset.k]; document.querySelectorAll('#tChoices .choice').forEach((x, k) => { x.disabled = true; if (q.choices[k].ans === q.ans) x.classList.add('right'); }); const ok = c.ans === q.ans; if (!ok) b.classList.add('wrong'); finishTest(q, ok ? 'correct' : 'wrong', c.en); });
+  }
+}
+function finishTest(q, verdict, given) {
+  const ok = verdict === 'correct' || verdict === 'caps'; q.ok = ok; if (ok) T.right++; else T.misses.push(q);
+  const msg = { correct: 'Correct.', caps: 'Correct, but watch the capitals: they mark different sounds.', close: 'Close, but not right.', wrong: 'Not this time.' }[verdict];
+  $('#tFeedback').innerHTML = `<div class="tag ${ok ? 'ok' : 'warn'}" style="margin:12px 0 8px">${msg}</div>${tgt(q.text, q.tr)}<div class="en">${esc(q.en)}</div>${q.akey ? `<button class="btn" id="tHear" style="margin-top:10px;min-height:36px">${PLAY} Tape</button>` : ''}`;
+  if (q.akey) { $('#tHear').onclick = () => play(q.akey); if (q.kind !== 'hear') play(q.akey); }
+  LOG.push({ t: Date.now(), session: SESSION, lang: L.code, unit: q.u.id, id: q.id, ex: 'test', pattern: 'test: ' + TKIND[q.kind].toLowerCase(), type: 'test', kind: q.kind, cue: q.en, target: q.text, answer: q.ans, given, verdict, graded: true, rating: ok ? 3 : verdict === 'close' ? 2 : 1, ms: Date.now() - T.t0 }); saveLog();
+  $('#tNext').hidden = false; $('#tNext').textContent = T.i === T.qs.length - 1 ? 'See the result' : 'Next'; $('#tNext').focus();
+}
+$('#tForm').onsubmit = ev => { ev.preventDefault(); const q = T.qs[T.i]; if ($('#tInput').disabled) return; $('#tInput').disabled = true; $('#tCheck').disabled = true; finishTest(q, gradeTyped($('#tInput').value, q.ans), $('#tInput').value); };
+$('#tNext').onclick = () => { T.i++; showTest(); };
+$('#tAgain').onclick = () => startTest(true);
+
 // ---------- progress ----------
 const avg = xs => xs.reduce((s, x) => s + x.rating, 0) / xs.length;
 const median = xs => { const a = xs.slice().sort((x, y) => x - y); return a.length ? a[Math.floor(a.length / 2)] : null; };
 function renderProgress() {
   const R = LOG.filter(x => x.rating);
   const lat = median(R.filter(x => x.latencyMs && x.latencyMs < 60000).map(x => x.latencyMs));
-  const why = {}; R.forEach(x => { if (x.why) why[x.why] = (why[x.why] || 0) + 1; });
-  $('#summary').innerHTML = R.length ? `<span><b>${R.length}</b> attempts</span><span><b>${R.filter(x => x.rating === 1).length}</b> rated needs work</span>${lat ? `<span><b>${(lat / 1000).toFixed(1)} s</b> median time to start speaking</span>` : ''}<span><b>${Object.keys(FLAGS).length}</b> clips reported</span>${Object.keys(why).length ? `<span>Reasons: ${Object.entries(why).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${esc(k)} ${v}`).join(' · ')}</span>` : ''}` : '';
+  const why = {}; R.forEach(x => { if (x.why) why[x.why] = (why[x.why] || 0) + 1; }); const G = R.filter(x => x.graded);
+  $('#summary').innerHTML = R.length ? `<span><b>${R.length}</b> attempts</span><span><b>${R.filter(x => x.rating === 1).length}</b> rated needs work</span>${lat ? `<span><b>${(lat / 1000).toFixed(1)} s</b> median time to start speaking</span>` : ''}${G.length ? `<span><b>${G.filter(x => x.rating === 3).length} of ${G.length}</b> test answers correct</span>` : ''}<span><b>${Object.keys(FLAGS).length}</b> clips reported</span>${Object.keys(why).length ? `<span>Reasons: ${Object.entries(why).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${esc(k)} ${v}`).join(' · ')}</span>` : ''}` : '';
   const by = {}; R.forEach(x => { const k = unitOf(x) + '|' + x.pattern; (by[k] = by[k] || []).push(x); });
   const tb = $('#patTable tbody'); tb.innerHTML = ''; const keys = Object.keys(by); $('#patEmpty').hidden = keys.length > 0; $('#patTable').hidden = !keys.length;
   keys.sort((a, b) => avg(by[a]) - avg(by[b])).forEach(k => { const xs = by[k], u = UNITS[k.split('|')[0]], l = median(xs.filter(x => x.latencyMs && x.latencyMs < 60000).map(x => x.latencyMs)); const tr = document.createElement('tr'); tr.innerHTML = `<td><span class="note">${u ? L.unitLabel + ' ' + u.n : ''}</span><br>${esc(xs[0].pattern)}</td><td>${xs.length}</td><td title="● needs work ○ good ◆ nailed it">${xs.slice(-5).map(x => '●○◆'[x.rating - 1]).join(' ')}</td><td>${l ? (l / 1000).toFixed(1) + ' s' : '—'}</td><td style="width:90px"><div class="bar"><i style="width:${Math.round((avg(xs) - 1) / 2 * 100)}%"></i></div></td>`; tb.appendChild(tr); });

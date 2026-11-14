@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Spanish Practice</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Noto+Naskh+Arabic:wght@400;600&display=swap">
-<link rel="stylesheet" href="../assets/app.css?v=11140929">
-<style>body{margin:0}[hidden]{display:none!important}.cue .ar,.cue .es{color:#fff}.cue .tr{color:#F9E6DE}.sumrow{display:flex;flex-wrap:wrap;gap:8px 22px;font-size:14px;color:var(--muted);margin-top:14px}.sumrow b{color:var(--fg)}.linkbtn{background:none;border:0;padding:0;font:inherit;font-size:13px;color:var(--muted);text-decoration:underline;cursor:pointer}</style>
+<link rel="stylesheet" href="../assets/app.css?v=11141054">
+<style>body{margin:0}[hidden]{display:none!important}.cue .ar,.cue .es{color:#fff}.cue .tr{color:#F9E6DE}.sumrow{display:flex;flex-wrap:wrap;gap:8px 22px;font-size:14px;color:var(--muted);margin-top:14px}.sumrow b{color:var(--fg)}.choice{font:inherit;font-size:16px;text-align:left;padding:13px 16px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--fg);cursor:pointer;min-height:48px}.choice:hover:not(:disabled){border-color:var(--accent)}.choice.right{background:var(--ok-soft);border-color:var(--ok);color:var(--ok)}.choice.wrong{background:var(--warn-soft);border-color:var(--warn);color:var(--warn)}.linkbtn{background:none;border:0;padding:0;font:inherit;font-size:13px;color:var(--muted);text-decoration:underline;cursor:pointer}</style>
 </head>
 <body>
 <div class="app">
@@ -16,6 +16,7 @@
   <a href="#conv" data-v="conv">Conversation</a>
   <a href="#ex" data-v="ex">Exercises</a>
   <a href="#quiz" data-v="quiz" hidden>Quiz</a>
+  <a href="#test" data-v="test">Test</a>
   <a href="#progress" data-v="progress">Progress</a>
   <a href="../">← Languages</a>
   <p class="navnote">Audio is the DLI Spanish Headstart for Latin America tape, a U.S. government course. Your recordings and progress stay in this browser.</p>
@@ -28,7 +29,7 @@
   <p class="sub">Pick one to work on. <span id="homeStats"></span></p>
   <div class="exlist" id="unitList" style="margin-top:18px;max-width:760px"></div>
   <div class="card" style="margin-top:18px;max-width:760px;box-sizing:border-box"><h2>How to work through one</h2>
-    <ol class="note" style="margin:0 0 0 18px;padding:0;line-height:1.8;font-size:14px"><li>Conversation: listen, then say each line.</li><li>Exercises, in the book's order: record your answer before you look.</li><li><a href="#drill" class="mixed">Mixed practice</a>: 20 cues from this one and earlier ones, weakest first.</li></ol>
+    <ol class="note" style="margin:0 0 0 18px;padding:0;line-height:1.8;font-size:14px"><li>Conversation: listen, then say each line.</li><li>Exercises, in the book's order. New phrases show their text once; after that you say them from the English alone.</li><li><a href="#test">Test</a>: twelve graded questions on the words and forms.</li><li><a href="#drill" class="mixed">Mixed practice</a>: 20 items from this one and earlier ones, from memory, weakest first.</li></ol>
     <p class="note" style="margin:10px 0 0">Every attempt is logged: your rating, how long you took to start, what went wrong, and what the recognizer heard. Export it from Progress.</p></div>
 </section>
 
@@ -54,7 +55,7 @@
   <div id="micBanner" class="banner" hidden style="margin-bottom:16px"></div>
   <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">
     <div class="grid" style="align-content:start">
-      <div class="card"><div class="eyebrow">What to do</div><p id="dInstr" style="margin:6px 0 0"></p><p class="note" id="dModel" style="margin:8px 0 0"></p></div>
+      <div class="card"><div class="eyebrow">What to do</div><p id="dInstr" style="margin:6px 0 0"></p><p class="note" id="dModel" style="margin:8px 0 0"></p><label class="note" style="display:flex;gap:8px;align-items:center;margin-top:10px">Text: <select id="studyMode" style="width:auto;font-size:13px;padding:5px 8px"><option value="auto">Hidden once I've seen it</option><option value="hide">Always hidden until I try</option><option value="show">Always shown</option></select></label></div>
       <div class="card" id="fromCard" hidden><div class="row" style="justify-content:space-between"><span class="eyebrow">Start from</span><button class="btn" id="playFrom" style="min-height:36px">▶ Tape</button></div><div id="fromBody" style="margin-top:4px"></div></div>
       <div class="cue"><div class="eyebrow" id="cueLabel">Cue</div><div class="big" id="cueText"></div><div style="margin-top:8px"><button class="btn" id="playCue" hidden></button></div></div>
       <div class="card"><div class="row" style="justify-content:space-between"><span class="eyebrow">Answer</span><button class="btn" id="reveal" style="min-height:36px">Show answer</button></div>
@@ -71,7 +72,7 @@
       <div class="heard"><div class="row" style="justify-content:space-between"><span class="lbl" style="margin:0">Recognizer heard</span><span class="tag mute" id="heardTag">waiting</span></div><div id="heardText" lang="es" style="min-height:1.5em;font-size:19px">—</div><div class="note" id="heardNote"></div><label class="note" style="display:flex;gap:8px;align-items:center;margin-top:8px"><input type="checkbox" id="srToggle"> Use the recognizer</label></div>
       <div id="rateRow"><p class="lbl">How did it go?</p><div class="rate"><button class="r1" data-r="1">Needs work</button><button class="r2" data-r="2">Good</button><button class="r3" data-r="3">Nailed it</button></div></div>
       <div id="whyRow" hidden><p class="lbl">What went wrong?</p><div class="row" style="gap:8px">
-        <button class="btn" data-why="wrong form" style="min-height:40px">Wrong ending or form</button><button class="btn" data-why="wrong word" style="min-height:40px">Wrong word</button><button class="btn" data-why="pronunciation" style="min-height:40px">Pronunciation</button><button class="btn" data-why="too slow" style="min-height:40px">Too slow</button><button class="btn" data-why="blanked" style="min-height:40px">Blanked</button><button class="linkbtn" data-why="">Skip</button></div></div>
+        <button class="btn" data-why="wrong form" style="min-height:40px">Wrong ending or form</button><button class="btn" data-why="wrong word" style="min-height:40px">Wrong word</button><button class="btn" data-why="pronunciation" style="min-height:40px">Pronunciation</button><button class="btn" data-why="too slow" style="min-height:40px">Too slow</button><button class="btn" data-why="blanked" style="min-height:40px">Blanked</button><button class="btn" data-why="did not know it" style="min-height:40px">Didn't know it</button><button class="linkbtn" data-why="">Skip</button></div></div>
       <div class="row" style="justify-content:space-between"><button class="btn" id="prev">← Back</button><button class="btn primary" id="next">Skip →</button></div>
     </div>
   </div>
@@ -91,6 +92,22 @@
   <div class="card" id="quizList" style="margin-top:18px"></div>
 </section>
 
+<section class="view" id="v-test" hidden>
+  <div class="crumb unitname"></div><h1>Test</h1>
+  <p class="sub">Twelve questions on this one's words and forms, weakest first. The app marks these, not you.</p>
+  <div class="pills" id="tPills" style="margin:14px 0 18px;max-width:720px" aria-hidden="true"></div>
+  <div class="card" id="tCard" style="max-width:720px;box-sizing:border-box">
+    <div class="eyebrow" id="tKind"></div>
+    <div id="tPrompt" style="margin:12px 0 16px"></div>
+    <div id="tChoices" class="grid" style="gap:10px"></div>
+    <form id="tForm" class="row"><input id="tInput" aria-label="Your answer" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" style="flex:1;min-width:180px;font:inherit;font-size:18px;padding:10px 12px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--fg)"><button class="btn primary" id="tCheck">Check</button></form>
+    <div id="tFeedback"></div>
+    <button class="btn primary" id="tNext" hidden style="margin-top:14px">Next</button>
+  </div>
+  <div class="card" id="tDone" hidden style="max-width:720px;box-sizing:border-box"><h2 id="tScore"></h2><p class="note">Missed items come back first next round.</p><div id="tMisses"></div>
+    <div class="row" style="margin-top:14px"><button class="btn primary" id="tAgain">Another round</button><a class="btn" href="#ex">Practise speaking</a></div></div>
+</section>
+
 <section class="view" id="v-progress" hidden>
   <h1>Progress</h1><p class="sub">Every attempt, grouped by the pattern it practises.</p>
   <div class="sumrow" id="summary"></div>
@@ -101,8 +118,8 @@
   </div>
 </section>
 </main></div>
-<script>window.LANG = {"code": "es", "name": "Spanish", "rtl": false, "sr": "es-MX", "tts": "es-MX", "logKey": "es.log", "audioBase": "audio/", "unitLabel": "Unit", "convLabel": "Conversation", "srNote": "Browser speech recognition, set to Latin American Spanish. It checks your words, not your accent."}; window.UNITS = {};</script>
-<script src="data/m1u1.js?v=11140929"></script>
-<script src="../assets/engine.js?v=11140929"></script>
+<script>window.LANG = {"code": "es", "name": "Spanish", "rtl": false, "sr": "es-MX", "tts": "es-MX", "logKey": "es.log", "audioBase": "audio/", "unitLabel": "Unit", "convLabel": "Conversation", "typeHint": "Type it in Spanish. Accents are not required.", "srNote": "Browser speech recognition, set to Latin American Spanish. It checks your words, not your accent."}; window.UNITS = {};</script>
+<script src="data/m1u1.js?v=11141054"></script>
+<script src="../assets/engine.js?v=11141054"></script>
 </body>
 </html>
