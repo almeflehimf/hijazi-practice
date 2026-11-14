@@ -1,3 +1,6 @@
-# Hijazi Practice
+# Language Practice
 
-Practice app for the FSI Saudi Arabic Basic Course (Urban Hijazi Dialect), a public-domain course. Lesson 1 so far.
+Practice apps built from public-domain U.S. government courses.
+
+- `arabic/` Hijazi Arabic, FSI Saudi Arabic Basic Course (Lesson 1)
+- `spanish/` Latin American Spanish, DLI Spanish Headstart (Module 1, Unit 1)
